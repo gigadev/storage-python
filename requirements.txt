@@ -1,0 +1,7 @@
+flask
+flask-pymongo
+dnspython
+pymongo
+werkzeug
+authlib
+

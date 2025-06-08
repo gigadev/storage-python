@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Location{% endblock %}
+{% block content %}
+<h2>{{ action }} Location</h2>
+<form method="post">
+    <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" class="form-control" id="name" name="name" required value="{{ loc['name'] if loc else '' }}">
+    </div>
+    <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <input type="text" class="form-control" id="description" name="description"
+            value="{{ loc['description'] if loc else '' }}">
+    </div>
+    <button type="submit" class="btn btn-primary">{{ action }}</button>
+    <a href="{{ url_for('list_locations') }}" class="btn btn-secondary ms-2">Cancel</a>
+</form>
+{% endblock %}

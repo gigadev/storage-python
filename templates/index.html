@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Home Storage Tracker{% endblock %}
+{% block content %}
+<div class="text-center">
+    <h1>Welcome to Home Storage Tracker</h1>
+    <p class="lead">Track your home storage products, locations, and more.</p>
+    {% if user %}
+    <a href="{{ url_for('list_items') }}" class="btn btn-primary">View Storage Items</a>
+    <a href="{{ url_for('list_locations') }}" class="btn btn-secondary ms-2">View Locations</a>
+    {% else %}
+    <a href="{{ url_for('login') }}" class="btn btn-success">Login with Google</a>
+    {% endif %}
+</div>
+{% endblock %}

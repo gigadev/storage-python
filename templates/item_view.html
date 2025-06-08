@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}View Storage Item{% endblock %}
+{% block content %}
+<h2>Storage Item Details</h2>
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">{{ item['name'] }}</h5>
+        <h6 class="card-subtitle mb-2 text-muted">Brand: {{ item['brand'] }}</h6>
+        <p class="card-text"><strong>Size:</strong> {{ item['size'] }}</p>
+        <p class="card-text"><strong>Nutritional Info:</strong> {{ item['nutritional_info'] }}</p>
+        <p class="card-text"><strong>Date Purchased:</strong> {{ item['date_purchased'] }}</p>
+        <p class="card-text"><strong>Expiration Date:</strong> {{ item['expiration_date'] }}</p>
+        <p class="card-text"><strong>Ingredients:</strong> {{ item['ingredients'] }}</p>
+        <p class="card-text"><strong>Other Info:</strong> {{ item['other_info'] }}</p>
+        <p class="card-text"><strong>Location:</strong> {{ location['name'] if location else 'Unknown' }}</p>
+    </div>
+</div>
+<a href="{{ url_for('edit_item', item_id=item['_id']) }}" class="btn btn-warning">Edit</a>
+<a href="{{ url_for('delete_item', item_id=item['_id']) }}" class="btn btn-danger ms-2"
+    onclick="return confirm('Delete this item?')">Delete</a>
+<a href="{{ url_for('list_items') }}" class="btn btn-secondary ms-2">Back to Items</a>
+{% endblock %}
