@@ -99,3 +99,10 @@ ehthumbs.db
 
 # Secrets
 *.env
+venv/
+__pycache__/
+.env
+secret/
+*.pyc
+.DS_Store
+*.sqlite3
