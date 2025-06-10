@@ -59,12 +59,11 @@ def login():
 @app.route('/login/authorized')
 def authorized():
     if not app.config.get('USE_AUTH', True):
-        # If auth is disabled, skip Google callback
         session['user'] = {'name': 'Demo User', 'email': 'demo@example.com'}
         flash('Demo user logged in (authentication disabled).', 'info')
         return redirect(url_for('index'))
     token = google.authorize_access_token()
-    resp = google.get('userinfo')
+    resp = google.get('https://openidconnect.googleapis.com/v1/userinfo', token=token)
     user_info = resp.json()
     session['user'] = user_info
     flash('You have been logged in.', 'success')
@@ -192,8 +191,7 @@ def inject_config():
 @app.before_request
 def set_demo_user_if_no_auth():
     if not app.config.get('USE_AUTH', True):
-        if 'user' not in session:
-            session['user'] = {'name': 'Demo User', 'email': 'demo@example.com'}
+        session['user'] = {'name': 'Demo User', 'email': 'demo@example.com'}
 
-# if __name__ == '__main__':
-#     app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
