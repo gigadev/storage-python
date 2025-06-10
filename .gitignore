@@ -96,3 +96,6 @@ __pypackages__/
 # Windows
 Thumbs.db
 ehthumbs.db
+
+# Secrets
+*.env
