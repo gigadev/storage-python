@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, request, session, flash
+from flask import Flask, render_template, redirect, url_for, request, session, flash, g
 from flask_pymongo import PyMongo
 from authlib.integrations.flask_client import OAuth
 from bson.objectid import ObjectId
@@ -34,6 +34,31 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+def get_user_id():
+    user = session.get('user')
+    if not user:
+        return None
+    # Use sub (Google ID) if available, else email
+    return user.get('sub') or user.get('email')
+
+@app.before_request
+def ensure_user_in_db():
+    if app.config.get('USE_AUTH', True):
+        user = session.get('user')
+        if user:
+            user_id = get_user_id()
+            g.user_id = user_id
+            # Upsert user in users collection
+            mongo.db.users.update_one(
+                {'_id': user_id},
+                {'$set': {'email': user.get('email'), 'name': user.get('name', user.get('email'))}},
+                upsert=True
+            )
+        else:
+            g.user_id = None
+    else:
+        g.user_id = 'demo-user'
 
 @app.route('/')
 def index():
@@ -78,7 +103,7 @@ def logout():
 @app.route('/locations')
 @login_required
 def list_locations():
-    locations = mongo.db.locations.find()
+    locations = mongo.db.locations.find({'user_id': g.user_id})
     return render_template('locations.html', locations=locations)
 
 @app.route('/locations/add', methods=['GET', 'POST'])
@@ -87,7 +112,7 @@ def add_location():
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
-        mongo.db.locations.insert_one({'name': name, 'description': description})
+        mongo.db.locations.insert_one({'name': name, 'description': description, 'user_id': g.user_id})
         flash('Location added!')
         return redirect(url_for('list_locations'))
     return render_template('location_form.html', action='Add')
@@ -95,17 +120,20 @@ def add_location():
 @app.route('/locations/<location_id>')
 @login_required
 def view_location(location_id):
-    loc = mongo.db.locations.find_one({'_id': ObjectId(location_id)})
+    loc = mongo.db.locations.find_one({'_id': ObjectId(location_id), 'user_id': g.user_id})
     return render_template('location_view.html', loc=loc)
 
 @app.route('/locations/<location_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_location(location_id):
-    loc = mongo.db.locations.find_one({'_id': ObjectId(location_id)})
+    loc = mongo.db.locations.find_one({'_id': ObjectId(location_id), 'user_id': g.user_id})
+    if not loc:
+        flash('Location not found.', 'danger')
+        return redirect(url_for('list_locations'))
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
-        mongo.db.locations.update_one({'_id': ObjectId(location_id)}, {'$set': {'name': name, 'description': description}})
+        mongo.db.locations.update_one({'_id': ObjectId(location_id), 'user_id': g.user_id}, {'$set': {'name': name, 'description': description}})
         flash('Location updated!')
         return redirect(url_for('list_locations'))
     return render_template('location_form.html', action='Edit', loc=loc)
@@ -113,16 +141,15 @@ def edit_location(location_id):
 @app.route('/locations/<location_id>/delete')
 @login_required
 def delete_location(location_id):
-    mongo.db.locations.delete_one({'_id': ObjectId(location_id)})
+    mongo.db.locations.delete_one({'_id': ObjectId(location_id), 'user_id': g.user_id})
     flash('Location deleted!')
     return redirect(url_for('list_locations'))
 
 @app.route('/items')
 @login_required
 def list_items():
-    items = list(mongo.db.storage_items.find())
-    # Attach location name for display
-    locations = {str(loc['_id']): loc['name'] for loc in mongo.db.locations.find()}
+    items = list(mongo.db.storage_items.find({'user_id': g.user_id}))
+    locations = {str(loc['_id']): loc['name'] for loc in mongo.db.locations.find({'user_id': g.user_id})}
     for item in items:
         item['location_name'] = locations.get(item.get('location_id', ''), 'Unknown')
     return render_template('items.html', items=items)
@@ -130,7 +157,7 @@ def list_items():
 @app.route('/items/add', methods=['GET', 'POST'])
 @login_required
 def add_item():
-    locations = list(mongo.db.locations.find())
+    locations = list(mongo.db.locations.find({'user_id': g.user_id}))
     if request.method == 'POST':
         data = {
             'name': request.form['name'],
@@ -141,7 +168,8 @@ def add_item():
             'expiration_date': request.form['expiration_date'],
             'ingredients': request.form['ingredients'],
             'other_info': request.form['other_info'],
-            'location_id': request.form['location_id']
+            'location_id': request.form['location_id'],
+            'user_id': g.user_id
         }
         mongo.db.storage_items.insert_one(data)
         flash('Item added!')
@@ -151,15 +179,18 @@ def add_item():
 @app.route('/items/<item_id>')
 @login_required
 def view_item(item_id):
-    item = mongo.db.storage_items.find_one({'_id': ObjectId(item_id)})
-    location = mongo.db.locations.find_one({'_id': ObjectId(item['location_id'])}) if item and 'location_id' in item else None
+    item = mongo.db.storage_items.find_one({'_id': ObjectId(item_id), 'user_id': g.user_id})
+    location = mongo.db.locations.find_one({'_id': ObjectId(item['location_id']), 'user_id': g.user_id}) if item and 'location_id' in item else None
     return render_template('item_view.html', item=item, location=location)
 
 @app.route('/items/<item_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_item(item_id):
-    item = mongo.db.storage_items.find_one({'_id': ObjectId(item_id)})
-    locations = list(mongo.db.locations.find())
+    item = mongo.db.storage_items.find_one({'_id': ObjectId(item_id), 'user_id': g.user_id})
+    locations = list(mongo.db.locations.find({'user_id': g.user_id}))
+    if not item:
+        flash('Item not found.', 'danger')
+        return redirect(url_for('list_items'))
     if request.method == 'POST':
         data = {
             'name': request.form['name'],
@@ -172,7 +203,7 @@ def edit_item(item_id):
             'other_info': request.form['other_info'],
             'location_id': request.form['location_id']
         }
-        mongo.db.storage_items.update_one({'_id': ObjectId(item_id)}, {'$set': data})
+        mongo.db.storage_items.update_one({'_id': ObjectId(item_id), 'user_id': g.user_id}, {'$set': data})
         flash('Item updated!')
         return redirect(url_for('list_items'))
     return render_template('item_form.html', action='Edit', locations=locations, item=item)
@@ -180,7 +211,7 @@ def edit_item(item_id):
 @app.route('/items/<item_id>/delete')
 @login_required
 def delete_item(item_id):
-    mongo.db.storage_items.delete_one({'_id': ObjectId(item_id)})
+    mongo.db.storage_items.delete_one({'_id': ObjectId(item_id), 'user_id': g.user_id})
     flash('Item deleted!')
     return redirect(url_for('list_items'))
 
