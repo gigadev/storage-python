@@ -4,6 +4,9 @@ from authlib.integrations.flask_client import OAuth
 from bson.objectid import ObjectId
 from functools import wraps
 import os
+import pandas as pd
+from datetime import datetime
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'devkey')
@@ -161,13 +164,20 @@ def add_item():
     if request.method == 'POST':
         data = {
             'name': request.form['name'],
-            'brand': request.form['brand'],
-            'size': request.form['size'],
-            'nutritional_info': request.form['nutritional_info'],
-            'date_purchased': request.form['date_purchased'],
-            'expiration_date': request.form['expiration_date'],
-            'ingredients': request.form['ingredients'],
-            'other_info': request.form['other_info'],
+            'brand': request.form.get('brand', ''),
+            'manufacturer': request.form.get('manufacturer', ''),
+            'size': request.form.get('size', ''),
+            'quantity': request.form.get('quantity', ''),
+            'units': request.form.get('units', ''),
+            'servings_per': request.form.get('servings_per', ''),
+            'nutritional_info': request.form.get('nutritional_info', ''),
+            'date_purchased': request.form.get('date_purchased', ''),
+            'manufactured_date': request.form.get('manufactured_date', ''),
+            'expiration_date': request.form.get('expiration_date', ''),
+            'ingredients': request.form.get('ingredients', ''),
+            'other_info': request.form.get('other_info', ''),
+            'upc': request.form.get('upc', ''),
+            'box': request.form.get('box', ''),
             'location_id': request.form['location_id'],
             'user_id': g.user_id
         }
@@ -194,13 +204,20 @@ def edit_item(item_id):
     if request.method == 'POST':
         data = {
             'name': request.form['name'],
-            'brand': request.form['brand'],
-            'size': request.form['size'],
-            'nutritional_info': request.form['nutritional_info'],
-            'date_purchased': request.form['date_purchased'],
-            'expiration_date': request.form['expiration_date'],
-            'ingredients': request.form['ingredients'],
-            'other_info': request.form['other_info'],
+            'brand': request.form.get('brand', ''),
+            'manufacturer': request.form.get('manufacturer', ''),
+            'size': request.form.get('size', ''),
+            'quantity': request.form.get('quantity', ''),
+            'units': request.form.get('units', ''),
+            'servings_per': request.form.get('servings_per', ''),
+            'nutritional_info': request.form.get('nutritional_info', ''),
+            'date_purchased': request.form.get('date_purchased', ''),
+            'manufactured_date': request.form.get('manufactured_date', ''),
+            'expiration_date': request.form.get('expiration_date', ''),
+            'ingredients': request.form.get('ingredients', ''),
+            'other_info': request.form.get('other_info', ''),
+            'upc': request.form.get('upc', ''),
+            'box': request.form.get('box', ''),
             'location_id': request.form['location_id']
         }
         mongo.db.storage_items.update_one({'_id': ObjectId(item_id), 'user_id': g.user_id}, {'$set': data})
@@ -214,6 +231,129 @@ def delete_item(item_id):
     mongo.db.storage_items.delete_one({'_id': ObjectId(item_id), 'user_id': g.user_id})
     flash('Item deleted!')
     return redirect(url_for('list_items'))
+
+@app.route('/import_csv', methods=['GET', 'POST'])
+@login_required
+def import_csv():
+    if request.method == 'POST':
+        # Check if file was uploaded
+        if 'csv_file' not in request.files:
+            flash('No file uploaded.', 'danger')
+            return redirect(url_for('import_csv'))
+        
+        file = request.files['csv_file']
+        if file.filename == '':
+            flash('No file selected.', 'danger')
+            return redirect(url_for('import_csv'))
+        
+        if not file.filename.endswith('.csv'):
+            flash('Please upload a CSV file.', 'danger')
+            return redirect(url_for('import_csv'))
+        
+        try:
+            # Read CSV file
+            df = pd.read_csv(file)
+            
+            # Expected columns (based on the sample CSV)
+            required_columns = ['ItemName', 'ItemLocation']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            
+            if missing_columns:
+                flash(f'Missing required columns: {", ".join(missing_columns)}', 'danger')
+                return redirect(url_for('import_csv'))
+            
+            # Track import statistics
+            locations_created = 0
+            items_imported = 0
+            errors = []
+            
+            # Get or create locations
+            location_map = {}  # Map location names to ObjectIds
+            
+            for index, row in df.iterrows():
+                try:
+                    # Get or create location
+                    location_name = str(row['ItemLocation']).strip()
+                    
+                    if location_name not in location_map:
+                        # Check if location exists for this user
+                        existing_loc = mongo.db.locations.find_one({
+                            'name': location_name,
+                            'user_id': g.user_id
+                        })
+                        
+                        if existing_loc:
+                            location_map[location_name] = existing_loc['_id']
+                        else:
+                            # Create new location
+                            new_loc = mongo.db.locations.insert_one({
+                                'name': location_name,
+                                'description': f'Auto-created from CSV import',
+                                'user_id': g.user_id
+                            })
+                            location_map[location_name] = new_loc.inserted_id
+                            locations_created += 1
+                    
+                    # Parse dates
+                    expiration_date = None
+                    if pd.notna(row.get('ExpirationDate')):
+                        try:
+                            expiration_date = pd.to_datetime(row['ExpirationDate']).strftime('%Y-%m-%d')
+                        except:
+                            pass
+                    
+                    manufactured_date = None
+                    if pd.notna(row.get('Manufactured Date')):
+                        try:
+                            manufactured_date = pd.to_datetime(row['Manufactured Date']).strftime('%Y-%m-%d')
+                        except:
+                            pass
+                    
+                    # Create item document
+                    item_data = {
+                        'name': str(row['ItemName']).strip(),
+                        'location_id': str(location_map[location_name]),
+                        'user_id': g.user_id,
+                        'brand': str(row.get('Manufacturer', '')).strip() if pd.notna(row.get('Manufacturer')) else '',
+                        'quantity': str(row.get('Quantity', '')).strip() if pd.notna(row.get('Quantity')) else '',
+                        'servings_per': str(row.get('Servings Per', '')).strip() if pd.notna(row.get('Servings Per')) else '',
+                        'size': str(row.get('Servings Size', '')).strip() if pd.notna(row.get('Servings Size')) else '',
+                        'units': str(row.get('Units', '')).strip() if pd.notna(row.get('Units')) else '',
+                        'expiration_date': expiration_date or '',
+                        'box': str(row.get('Box', '')).strip() if pd.notna(row.get('Box')) else '',
+                        'manufactured_date': manufactured_date or '',
+                        'upc': str(row.get('UPC', '')).strip() if pd.notna(row.get('UPC')) else '',
+                        'nutritional_info': str(row.get('Servings', '')).strip() if pd.notna(row.get('Servings')) else '',
+                        'other_info': str(row.get('Damaged', '')).strip() if pd.notna(row.get('Damaged')) else '',
+                        'date_purchased': '',  # Not in the CSV
+                        'ingredients': ''  # Not in the CSV
+                    }
+                    
+                    # Insert item
+                    mongo.db.storage_items.insert_one(item_data)
+                    items_imported += 1
+                    
+                except Exception as e:
+                    errors.append(f'Row {index + 2}: {str(e)}')
+            
+            # Display results
+            success_msg = f'Import completed! {items_imported} items imported'
+            if locations_created > 0:
+                success_msg += f', {locations_created} locations created'
+            
+            flash(success_msg, 'success')
+            
+            if errors:
+                flash(f'Errors encountered: {len(errors)} rows failed. First few errors: {"; ".join(errors[:5])}', 'warning')
+            
+            return redirect(url_for('list_items'))
+            
+        except Exception as e:
+            flash(f'Error processing CSV file: {str(e)}', 'danger')
+            return redirect(url_for('import_csv'))
+    
+    # GET request - show the upload form
+    return render_template('import_csv.html')
 
 @app.context_processor
 def inject_config():
