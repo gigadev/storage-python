@@ -162,6 +162,10 @@ def list_items():
 def add_item():
     locations = list(mongo.db.locations.find({'user_id': g.user_id}))
     if request.method == 'POST':
+        # Convert box to integer if provided
+        box_value = request.form.get('box', '')
+        box = int(box_value) if box_value and box_value.strip() else None
+        
         data = {
             'name': request.form['name'],
             'brand': request.form.get('brand', ''),
@@ -177,7 +181,7 @@ def add_item():
             'ingredients': request.form.get('ingredients', ''),
             'other_info': request.form.get('other_info', ''),
             'upc': request.form.get('upc', ''),
-            'box': request.form.get('box', ''),
+            'box': box,
             'location_id': request.form['location_id'],
             'user_id': g.user_id
         }
@@ -202,6 +206,10 @@ def edit_item(item_id):
         flash('Item not found.', 'danger')
         return redirect(url_for('list_items'))
     if request.method == 'POST':
+        # Convert box to integer if provided
+        box_value = request.form.get('box', '')
+        box = int(box_value) if box_value and box_value.strip() else None
+        
         data = {
             'name': request.form['name'],
             'brand': request.form.get('brand', ''),
@@ -217,7 +225,7 @@ def edit_item(item_id):
             'ingredients': request.form.get('ingredients', ''),
             'other_info': request.form.get('other_info', ''),
             'upc': request.form.get('upc', ''),
-            'box': request.form.get('box', ''),
+            'box': box,
             'location_id': request.form['location_id']
         }
         mongo.db.storage_items.update_one({'_id': ObjectId(item_id), 'user_id': g.user_id}, {'$set': data})
@@ -309,6 +317,15 @@ def import_csv():
                         except:
                             pass
                     
+                    # Parse box number as integer
+                    box_value = None
+                    if pd.notna(row.get('Box')):
+                        try:
+                            box_str = str(row.get('Box', '')).strip()
+                            box_value = int(float(box_str)) if box_str else None
+                        except (ValueError, TypeError):
+                            pass
+                    
                     # Create item document
                     item_data = {
                         'name': str(row['ItemName']).strip(),
@@ -320,7 +337,7 @@ def import_csv():
                         'size': str(row.get('Servings Size', '')).strip() if pd.notna(row.get('Servings Size')) else '',
                         'units': str(row.get('Units', '')).strip() if pd.notna(row.get('Units')) else '',
                         'expiration_date': expiration_date or '',
-                        'box': str(row.get('Box', '')).strip() if pd.notna(row.get('Box')) else '',
+                        'box': box_value,
                         'manufactured_date': manufactured_date or '',
                         'upc': str(row.get('UPC', '')).strip() if pd.notna(row.get('UPC')) else '',
                         'nutritional_info': str(row.get('Servings', '')).strip() if pd.notna(row.get('Servings')) else '',
