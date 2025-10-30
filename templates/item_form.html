@@ -69,9 +69,9 @@
                     value="{{ item.get('upc', '') if item else '' }}">
             </div>
             <div class="mb-3">
-                <label for="box" class="form-label">Box/Container ID</label>
-                <input type="text" class="form-control" id="box" name="box"
-                    value="{{ item.get('box', '') if item else '' }}">
+                <label for="box" class="form-label">Box/Container Number</label>
+                <input type="number" class="form-control" id="box" name="box" step="1" min="0"
+                    value="{{ item.get('box', '') if item else '' }}" placeholder="e.g., 1, 2, 3...">
             </div>
         </div>
 

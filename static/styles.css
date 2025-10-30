@@ -3,6 +3,16 @@ body[data-bs-theme="dark"] {
     color: #f8f9fa;
 }
 
+/* Sticky Navbar */
+.navbar.sticky-top {
+    z-index: 1030;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body[data-bs-theme="dark"] .navbar.sticky-top {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
 body[data-bs-theme="dark"] .navbar {
     background-color: #222 !important;
 }
@@ -25,4 +35,61 @@ body[data-bs-theme="dark"] .alert-info {
     background-color: #222;
     color: #f8f9fa;
     border-color: #444;
+}
+
+/* DataTables Dark Mode Support */
+body[data-bs-theme="dark"] .dataTables_wrapper .dataTables_length,
+body[data-bs-theme="dark"] .dataTables_wrapper .dataTables_filter,
+body[data-bs-theme="dark"] .dataTables_wrapper .dataTables_info,
+body[data-bs-theme="dark"] .dataTables_wrapper .dataTables_paginate {
+    color: #f8f9fa;
+}
+
+body[data-bs-theme="dark"] .dataTables_wrapper .dataTables_filter input,
+body[data-bs-theme="dark"] .dataTables_wrapper .dataTables_length select {
+    background-color: #2b3035;
+    color: #f8f9fa;
+    border-color: #444;
+}
+
+body[data-bs-theme="dark"] .page-link {
+    background-color: #2b3035;
+    border-color: #444;
+    color: #f8f9fa;
+}
+
+body[data-bs-theme="dark"] .page-link:hover {
+    background-color: #343a40;
+    color: #fff;
+}
+
+body[data-bs-theme="dark"] .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+body[data-bs-theme="dark"] .page-item.disabled .page-link {
+    background-color: #23272b;
+    color: #6c757d;
+}
+
+/* DataTables Responsive Design */
+.dataTables_wrapper {
+    padding-top: 10px;
+}
+
+.dataTables_filter {
+    margin-bottom: 15px;
+}
+
+.dataTables_filter input {
+    margin-left: 10px;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+/* Action buttons in table */
+.btn-group-sm>.btn {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
 }
