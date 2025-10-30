@@ -79,7 +79,7 @@ body[data-bs-theme="dark"] .page-item.disabled .page-link {
 }
 
 /* Action buttons in table */
-.btn-group-sm > .btn {
+.btn-group-sm>.btn {
     font-size: 0.8rem;
     padding: 0.25rem 0.5rem;
 }
