@@ -3,6 +3,16 @@ body[data-bs-theme="dark"] {
     color: #f8f9fa;
 }
 
+/* Sticky Navbar */
+.navbar.sticky-top {
+    z-index: 1030;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body[data-bs-theme="dark"] .navbar.sticky-top {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
 body[data-bs-theme="dark"] .navbar {
     background-color: #222 !important;
 }
