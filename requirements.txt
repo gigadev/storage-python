@@ -6,3 +6,4 @@ werkzeug
 authlib
 requests
 python-dotenv
+pandas

@@ -3,55 +3,122 @@
 {% block content %}
 <h2>{{ action }} Storage Item</h2>
 <form method="post">
-    <div class="mb-3">
-        <label for="name" class="form-label">Name</label>
-        <input type="text" class="form-control" id="name" name="name" required
-            value="{{ item['name'] if item else '' }}">
+    <div class="row">
+        <div class="col-md-6">
+            <h5 class="mb-3">Basic Information</h5>
+            <div class="mb-3">
+                <label for="name" class="form-label">Name *</label>
+                <input type="text" class="form-control" id="name" name="name" required
+                    value="{{ item.get('name', '') if item else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="brand" class="form-label">Brand</label>
+                <input type="text" class="form-control" id="brand" name="brand"
+                    value="{{ item.get('brand', '') if item else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="manufacturer" class="form-label">Manufacturer</label>
+                <input type="text" class="form-control" id="manufacturer" name="manufacturer"
+                    value="{{ item.get('manufacturer', '') if item else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="location_id" class="form-label">Location *</label>
+                <select class="form-select" id="location_id" name="location_id" required>
+                    <option value="">Select Location</option>
+                    {% for loc in locations %}
+                    <option value="{{ loc['_id'] }}" {% if item and item.get('location_id')==loc['_id']|string
+                        %}selected{% endif %}>
+                        {{ loc['name'] }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <h5 class="mb-3">Quantity & Measurements</h5>
+            <div class="mb-3">
+                <label for="quantity" class="form-label">Quantity</label>
+                <input type="text" class="form-control" id="quantity" name="quantity"
+                    value="{{ item.get('quantity', '') if item else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="size" class="form-label">Size/Serving Size</label>
+                <input type="text" class="form-control" id="size" name="size"
+                    value="{{ item.get('size', '') if item else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="units" class="form-label">Units</label>
+                <input type="text" class="form-control" id="units" name="units"
+                    value="{{ item.get('units', '') if item else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="servings_per" class="form-label">Servings Per Container</label>
+                <input type="text" class="form-control" id="servings_per" name="servings_per"
+                    value="{{ item.get('servings_per', '') if item else '' }}">
+            </div>
+        </div>
     </div>
-    <div class="mb-3">
-        <label for="brand" class="form-label">Brand</label>
-        <input type="text" class="form-control" id="brand" name="brand" value="{{ item['brand'] if item else '' }}">
+
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <h5 class="mb-3">Identification</h5>
+            <div class="mb-3">
+                <label for="upc" class="form-label">UPC/Barcode</label>
+                <input type="text" class="form-control" id="upc" name="upc"
+                    value="{{ item.get('upc', '') if item else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="box" class="form-label">Box/Container ID</label>
+                <input type="text" class="form-control" id="box" name="box"
+                    value="{{ item.get('box', '') if item else '' }}">
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <h5 class="mb-3">Dates</h5>
+            <div class="mb-3">
+                <label for="date_purchased" class="form-label">Date Purchased</label>
+                <input type="date" class="form-control" id="date_purchased" name="date_purchased"
+                    value="{{ item.get('date_purchased', '') if item else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="manufactured_date" class="form-label">Manufactured Date</label>
+                <input type="date" class="form-control" id="manufactured_date" name="manufactured_date"
+                    value="{{ item.get('manufactured_date', '') if item else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="expiration_date" class="form-label">Expiration Date</label>
+                <input type="date" class="form-control" id="expiration_date" name="expiration_date"
+                    value="{{ item.get('expiration_date', '') if item else '' }}">
+            </div>
+        </div>
     </div>
-    <div class="mb-3">
-        <label for="size" class="form-label">Size</label>
-        <input type="text" class="form-control" id="size" name="size" value="{{ item['size'] if item else '' }}">
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <h5 class="mb-3">Additional Information</h5>
+            <div class="mb-3">
+                <label for="nutritional_info" class="form-label">Nutritional Information</label>
+                <textarea class="form-control" id="nutritional_info" name="nutritional_info"
+                    rows="2">{{ item.get('nutritional_info', '') if item else '' }}</textarea>
+            </div>
+            <div class="mb-3">
+                <label for="ingredients" class="form-label">Ingredients</label>
+                <textarea class="form-control" id="ingredients" name="ingredients"
+                    rows="2">{{ item.get('ingredients', '') if item else '' }}</textarea>
+            </div>
+            <div class="mb-3">
+                <label for="other_info" class="form-label">Other Info / Notes</label>
+                <textarea class="form-control" id="other_info" name="other_info"
+                    rows="2">{{ item.get('other_info', '') if item else '' }}</textarea>
+            </div>
+        </div>
     </div>
-    <div class="mb-3">
-        <label for="nutritional_info" class="form-label">Nutritional Information</label>
-        <input type="text" class="form-control" id="nutritional_info" name="nutritional_info"
-            value="{{ item['nutritional_info'] if item else '' }}">
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary">{{ action }}</button>
+        <a href="{{ url_for('list_items') }}" class="btn btn-secondary ms-2">Cancel</a>
     </div>
-    <div class="mb-3">
-        <label for="date_purchased" class="form-label">Date Purchased</label>
-        <input type="date" class="form-control" id="date_purchased" name="date_purchased"
-            value="{{ item['date_purchased'] if item else '' }}">
-    </div>
-    <div class="mb-3">
-        <label for="expiration_date" class="form-label">Expiration Date</label>
-        <input type="date" class="form-control" id="expiration_date" name="expiration_date"
-            value="{{ item['expiration_date'] if item else '' }}">
-    </div>
-    <div class="mb-3">
-        <label for="ingredients" class="form-label">Ingredients</label>
-        <input type="text" class="form-control" id="ingredients" name="ingredients"
-            value="{{ item['ingredients'] if item else '' }}">
-    </div>
-    <div class="mb-3">
-        <label for="other_info" class="form-label">Other Info</label>
-        <input type="text" class="form-control" id="other_info" name="other_info"
-            value="{{ item['other_info'] if item else '' }}">
-    </div>
-    <div class="mb-3">
-        <label for="location_id" class="form-label">Location</label>
-        <select class="form-select" id="location_id" name="location_id" required>
-            <option value="">Select Location</option>
-            {% for loc in locations %}
-            <option value="{{ loc['_id'] }}" {% if item and item['location_id']==loc['_id']|string %}selected{% endif
-                %}>{{ loc['name'] }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <button type="submit" class="btn btn-primary">{{ action }}</button>
-    <a href="{{ url_for('list_items') }}" class="btn btn-secondary ms-2">Cancel</a>
 </form>
 {% endblock %}

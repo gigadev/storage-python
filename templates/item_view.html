@@ -5,13 +5,29 @@
 <div class="card mb-3">
     <div class="card-body">
         <h5 class="card-title">{{ item['name'] }}</h5>
-        <h6 class="card-subtitle mb-2 text-muted">Brand: {{ item['brand'] }}</h6>
-        <p class="card-text"><strong>Size:</strong> {{ item['size'] }}</p>
-        <p class="card-text"><strong>Nutritional Info:</strong> {{ item['nutritional_info'] }}</p>
-        <p class="card-text"><strong>Date Purchased:</strong> {{ item['date_purchased'] }}</p>
-        <p class="card-text"><strong>Expiration Date:</strong> {{ item['expiration_date'] }}</p>
-        <p class="card-text"><strong>Ingredients:</strong> {{ item['ingredients'] }}</p>
-        <p class="card-text"><strong>Other Info:</strong> {{ item['other_info'] }}</p>
+        <h6 class="card-subtitle mb-2 text-muted">Brand: {{ item.get('brand', '') }}</h6>
+
+        <hr>
+        <h6 class="mt-3 mb-2">Product Information</h6>
+        <p class="card-text"><strong>Manufacturer:</strong> {{ item.get('manufacturer', 'N/A') }}</p>
+        <p class="card-text"><strong>Size:</strong> {{ item.get('size', 'N/A') }}</p>
+        <p class="card-text"><strong>Quantity:</strong> {{ item.get('quantity', 'N/A') }}</p>
+        <p class="card-text"><strong>Units:</strong> {{ item.get('units', 'N/A') }}</p>
+        <p class="card-text"><strong>Servings Per Container:</strong> {{ item.get('servings_per', 'N/A') }}</p>
+        <p class="card-text"><strong>UPC/Barcode:</strong> {{ item.get('upc', 'N/A') }}</p>
+        <p class="card-text"><strong>Box/Container:</strong> {{ item.get('box', 'N/A') }}</p>
+
+        <hr>
+        <h6 class="mt-3 mb-2">Dates</h6>
+        <p class="card-text"><strong>Date Purchased:</strong> {{ item.get('date_purchased', 'N/A') }}</p>
+        <p class="card-text"><strong>Manufactured Date:</strong> {{ item.get('manufactured_date', 'N/A') }}</p>
+        <p class="card-text"><strong>Expiration Date:</strong> {{ item.get('expiration_date', 'N/A') }}</p>
+
+        <hr>
+        <h6 class="mt-3 mb-2">Additional Information</h6>
+        <p class="card-text"><strong>Nutritional Info:</strong> {{ item.get('nutritional_info', 'N/A') }}</p>
+        <p class="card-text"><strong>Ingredients:</strong> {{ item.get('ingredients', 'N/A') }}</p>
+        <p class="card-text"><strong>Other Info:</strong> {{ item.get('other_info', 'N/A') }}</p>
         <p class="card-text"><strong>Location:</strong> {{ location['name'] if location else 'Unknown' }}</p>
     </div>
 </div>
