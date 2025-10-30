@@ -1,0 +1,95 @@
+@page "/locations"
+@using StorageTrackerMaui.Data
+@using StorageTrackerMaui.Models
+@using StorageTrackerMaui.Services
+@inject DatabaseService Database
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Locations</h3>
+        <button class="btn btn-primary" @onclick="AddNewLocation">
+            <span>+ Add Location</span>
+        </button>
+    </div>
+
+    @if (locations == null)
+    {
+        <p>Loading...</p>
+    }
+    else if (locations.Count == 0)
+    {
+        <div class="alert alert-info">
+            No locations found. Click "Add Location" to create one.
+        </div>
+    }
+    else
+    {
+        <div class="list-group">
+            @foreach (var location in locations)
+            {
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="mb-1">@location.Name</h5>
+                            <p class="mb-1 text-muted">@location.Description</p>
+                            @if (!location.IsSynced)
+                            {
+                                <span class="badge bg-warning text-dark">Not Synced</span>
+                            }
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => EditLocation(location.Id)">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteLocation(location.Id)">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Location>? locations;
+    private User? currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await AuthService.GetCurrentUserAsync();
+        if (currentUser == null)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        await LoadLocations();
+    }
+
+    private async Task LoadLocations()
+    {
+        if (currentUser != null)
+        {
+            locations = await Database.GetLocationsAsync(currentUser.Id);
+        }
+    }
+
+    private void AddNewLocation()
+    {
+        Navigation.NavigateTo("/location/new");
+    }
+
+    private void EditLocation(string id)
+    {
+        Navigation.NavigateTo($"/location/edit/{id}");
+    }
+
+    private async Task DeleteLocation(string id)
+    {
+        if (currentUser != null)
+        {
+            await Database.DeleteLocationAsync(id);
+            await LoadLocations();
+        }
+    }
+}

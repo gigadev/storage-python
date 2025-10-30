@@ -1,0 +1,170 @@
+@page "/item/new"
+@page "/item/edit/{Id}"
+@using StorageTrackerMaui.Data
+@using StorageTrackerMaui.Models
+@using StorageTrackerMaui.Services
+@inject DatabaseService Database
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="container mt-3">
+    <h3>@(IsNew ? "Add" : "Edit") Storage Item</h3>
+
+    @if (item != null && locations != null)
+    {
+        <div class="card">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Name *</label>
+                    <input type="text" class="form-control" @bind="item.Name" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Brand</label>
+                    <input type="text" class="form-control" @bind="item.Brand" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Size</label>
+                    <input type="text" class="form-control" @bind="item.Size" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Location *</label>
+                    <select class="form-select" @bind="item.LocationId">
+                        <option value="">-- Select Location --</option>
+                        @foreach (var location in locations)
+                        {
+                            <option value="@location.Id">@location.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Date Purchased</label>
+                        <input type="text" class="form-control" @bind="item.DatePurchased" placeholder="YYYY-MM-DD" />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Expiration Date</label>
+                        <input type="text" class="form-control" @bind="item.ExpirationDate" placeholder="YYYY-MM-DD" />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Nutritional Info</label>
+                    <textarea class="form-control" rows="2" @bind="item.NutritionalInfo"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Ingredients</label>
+                    <textarea class="form-control" rows="3" @bind="item.Ingredients"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Other Info</label>
+                    <textarea class="form-control" rows="2" @bind="item.OtherInfo"></textarea>
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" @onclick="SaveItem" disabled="@isSaving">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Save
+                    </button>
+                    <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    private StorageItem? item;
+    private List<Location>? locations;
+    private User? currentUser;
+    private bool isSaving = false;
+    private string errorMessage = string.Empty;
+
+    private bool IsNew => string.IsNullOrEmpty(Id) || Id == "new";
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await AuthService.GetCurrentUserAsync();
+        if (currentUser == null)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        locations = await Database.GetLocationsAsync(currentUser.Id);
+
+        if (IsNew)
+        {
+            item = new StorageItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserId = currentUser.Id
+            };
+        }
+        else
+        {
+            item = await Database.GetStorageItemAsync(Id!);
+            if (item == null)
+            {
+                Navigation.NavigateTo("/items");
+            }
+        }
+    }
+
+    private async Task SaveItem()
+    {
+        if (item == null || currentUser == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(item.Name))
+        {
+            errorMessage = "Name is required";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(item.LocationId))
+        {
+            errorMessage = "Location is required";
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            await Database.SaveStorageItemAsync(item);
+            Navigation.NavigateTo("/items");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving item: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/items");
+    }
+}

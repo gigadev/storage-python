@@ -1,0 +1,106 @@
+@page "/items"
+@using StorageTrackerMaui.Data
+@using StorageTrackerMaui.Models
+@using StorageTrackerMaui.Services
+@inject DatabaseService Database
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Storage Items</h3>
+        <button class="btn btn-primary" @onclick="AddNewItem">
+            <span>+ Add Item</span>
+        </button>
+    </div>
+
+    @if (items == null)
+    {
+        <p>Loading...</p>
+    }
+    else if (items.Count == 0)
+    {
+        <div class="alert alert-info">
+            No items found. Click "Add Item" to create one.
+        </div>
+    }
+    else
+    {
+        <div class="list-group">
+            @foreach (var item in items)
+            {
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1">@item.Name</h5>
+                            @if (!string.IsNullOrEmpty(item.Brand))
+                            {
+                                <p class="mb-1 text-muted small">Brand: @item.Brand</p>
+                            }
+                            @if (!string.IsNullOrEmpty(item.LocationName))
+                            {
+                                <p class="mb-1"><span class="badge bg-secondary">@item.LocationName</span></p>
+                            }
+                            @if (!string.IsNullOrEmpty(item.ExpirationDate))
+                            {
+                                <p class="mb-1 small">Expires: @item.ExpirationDate</p>
+                            }
+                            @if (!item.IsSynced)
+                            {
+                                <span class="badge bg-warning text-dark">Not Synced</span>
+                            }
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => EditItem(item.Id)">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteItem(item.Id)">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<StorageItem>? items;
+    private User? currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await AuthService.GetCurrentUserAsync();
+        if (currentUser == null)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        await LoadItems();
+    }
+
+    private async Task LoadItems()
+    {
+        if (currentUser != null)
+        {
+            items = await Database.GetStorageItemsAsync(currentUser.Id);
+        }
+    }
+
+    private void AddNewItem()
+    {
+        Navigation.NavigateTo("/item/new");
+    }
+
+    private void EditItem(string id)
+    {
+        Navigation.NavigateTo($"/item/edit/{id}");
+    }
+
+    private async Task DeleteItem(string id)
+    {
+        if (currentUser != null)
+        {
+            await Database.DeleteStorageItemAsync(id);
+            await LoadItems();
+        }
+    }
+}
