@@ -1,0 +1,118 @@
+@page "/location/new"
+@page "/location/edit/{Id}"
+@using StorageTrackerMaui.Data
+@using StorageTrackerMaui.Models
+@using StorageTrackerMaui.Services
+@inject DatabaseService Database
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="container mt-3">
+    <h3>@(IsNew ? "Add" : "Edit") Location</h3>
+
+    @if (location != null)
+    {
+        <div class="card">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-control" @bind="location.Name" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" rows="3" @bind="location.Description"></textarea>
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" @onclick="SaveLocation" disabled="@isSaving">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Save
+                    </button>
+                    <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    private Location? location;
+    private User? currentUser;
+    private bool isSaving = false;
+    private string errorMessage = string.Empty;
+
+    private bool IsNew => string.IsNullOrEmpty(Id) || Id == "new";
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await AuthService.GetCurrentUserAsync();
+        if (currentUser == null)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        if (IsNew)
+        {
+            location = new Location
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserId = currentUser.Id
+            };
+        }
+        else
+        {
+            location = await Database.GetLocationAsync(Id!);
+            if (location == null)
+            {
+                Navigation.NavigateTo("/locations");
+            }
+        }
+    }
+
+    private async Task SaveLocation()
+    {
+        if (location == null || currentUser == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(location.Name))
+        {
+            errorMessage = "Name is required";
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            await Database.SaveLocationAsync(location);
+            Navigation.NavigateTo("/locations");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving location: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/locations");
+    }
+}

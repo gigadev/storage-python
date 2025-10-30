@@ -1,0 +1,112 @@
+@page "/login"
+@using StorageTrackerMaui.Services
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header">
+            <h3>Storage Tracker Login</h3>
+        </div>
+        <div class="card-body">
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger">@errorMessage</div>
+            }
+
+            <div class="mb-3">
+                <button class="btn btn-primary btn-lg w-100" @onclick="LoginWithGoogle" disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    Login with Google
+                </button>
+            </div>
+
+            <hr />
+
+            <div class="mt-3">
+                <h5>Demo Login (No Authentication Required)</h5>
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-control" @bind="demoName" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" @bind="demoEmail" />
+                </div>
+                <button class="btn btn-secondary w-100" @onclick="DemoLogin" disabled="@isLoading">
+                    Demo Login
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+    private string demoName = "Demo User";
+    private string demoEmail = "demo@example.com";
+
+    private async Task LoginWithGoogle()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            var result = await AuthService.LoginWithGoogleAsync();
+            if (result.Success)
+            {
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Login failed: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task DemoLogin()
+    {
+        if (string.IsNullOrWhiteSpace(demoName) || string.IsNullOrWhiteSpace(demoEmail))
+        {
+            errorMessage = "Please enter both name and email";
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            var result = await AuthService.DemoLoginAsync(demoEmail, demoName);
+            if (result.Success)
+            {
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Login failed: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

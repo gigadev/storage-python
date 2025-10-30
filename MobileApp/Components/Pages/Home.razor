@@ -1,0 +1,116 @@
+@page "/"
+@using StorageTrackerMaui.Services
+@using StorageTrackerMaui.Models
+@inject AuthService AuthService
+@inject SyncService SyncService
+@inject NavigationManager Navigation
+
+<div class="container mt-3">
+    @if (currentUser != null)
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <h4>Welcome, @currentUser.Name!</h4>
+                <p class="text-muted">@currentUser.Email</p>
+
+                @if (currentUser.LastSyncDate.HasValue)
+                {
+                    <p class="small">Last synced: @currentUser.LastSyncDate.Value.ToLocalTime().ToString("g")</p>
+                }
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" @onclick="SyncData" disabled="@isSyncing">
+                        @if (isSyncing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Sync Now
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="Logout">Logout</button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(syncMessage))
+                {
+                    <div class="alert alert-info mt-3">@syncMessage</div>
+                }
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Locations</h5>
+                        <p class="card-text">Manage your storage locations</p>
+                        <a href="/locations" class="btn btn-primary">View Locations</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Storage Items</h5>
+                        <p class="card-text">Track your stored items</p>
+                        <a href="/items" class="btn btn-primary">View Items</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body text-center">
+                <h3>Home Storage Tracker</h3>
+                <p>Please log in to continue</p>
+                <a href="/login" class="btn btn-primary">Login</a>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private User? currentUser;
+    private bool isSyncing = false;
+    private string syncMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await AuthService.GetCurrentUserAsync();
+        if (currentUser == null)
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private async Task SyncData()
+    {
+        isSyncing = true;
+        syncMessage = string.Empty;
+
+        try
+        {
+            var result = await SyncService.SyncAllAsync();
+            syncMessage = result.Message;
+
+            if (result.Success)
+            {
+                currentUser = await AuthService.GetCurrentUserAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            syncMessage = $"Sync error: {ex.Message}";
+        }
+        finally
+        {
+            isSyncing = false;
+        }
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login");
+    }
+}

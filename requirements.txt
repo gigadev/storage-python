@@ -4,4 +4,5 @@ dnspython
 pymongo
 werkzeug
 authlib
-
+requests
+python-dotenv
